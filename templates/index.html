@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriVisionAI - Plant Disease Detection</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #1400c6;
+            --accent-green: #7ebc59;
+            --neutral-50: #fafafa;
+            --neutral-100: #f5f5f5;
+            --neutral-200: #e5e5e5;
+            --neutral-300: #d4d4d4;
+            --neutral-400: #a3a3a3;
+            --neutral-500: #737373;
+            --neutral-600: #525252;
+            --neutral-700: #404040;
+            --neutral-800: #262626;
+            --neutral-900: #171717;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(180deg, #0a120a 0%, #1a2e1a 100%);
+            color: var(--neutral-100);
+            line-height: 1.6;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(20, 0, 198, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(20, 0, 198, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(10, 18, 10, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        nav.scrolled {
+            background: rgba(10, 18, 10, 0.95);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-green), var(--primary-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--neutral-300);
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 10rem 2rem 6rem;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(126, 188, 89, 0.1);
+            border: 1px solid rgba(126, 188, 89, 0.2);
+            color: var(--accent-green);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .hero-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #ffffff 0%, #a0a0a0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        .subtitle {
+            max-width: 800px;
+            margin: 0 auto 3rem;
+            color: var(--neutral-300);
+            font-size: 1.35rem;
+            line-height: 1.7;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 3rem;
+            margin-bottom: 4rem;
+            box-shadow: var(--shadow-2xl);
+        }
+
+        .section-tag {
+            color: var(--accent-green);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .section-description {
+            color: var(--neutral-400);
+            font-size: 1.1rem;
+            line-height: 1.7;
+            max-width: 700px;
+            margin-bottom: 2rem;
+        }
+        
+        .upload-area {
+            background: rgba(255, 255, 255, 0.02);
+            border: 2px dashed rgba(126, 188, 89, 0.3);
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .upload-area.dragover {
+            border-color: var(--accent-green);
+            background: rgba(126, 188, 89, 0.1);
+            border-style: solid;
+            box-shadow: 0 0 30px rgba(126, 188, 89, 0.3);
+        }
+        
+        #file-input {
+            display: none;
+        }
+        
+        .upload-icon {
+            font-size: 1.5em;
+            margin-bottom: 1.5rem;
+            color: var(--accent-green);
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .upload-text {
+            color: var(--neutral-300);
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-text.secondary {
+            font-size: 0.95em;
+            color: var(--neutral-500);
+            font-weight: 400;
+        }
+        
+        .file-info {
+            margin-top: 1rem;
+            color: var(--accent-green);
+            font-weight: 600;
+            font-size: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        #preview-container {
+            margin: 2rem 0;
+            text-align: center;
+            display: none;
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        #image-preview {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, var(--primary-blue), #1a00ff);
+            color: white;
+            border: none;
+            padding: 1.25rem 3rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 2rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(20, 0, 198, 0.3);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .btn:disabled {
+            background: rgba(115, 115, 115, 0.3);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn:disabled::before {
+            display: none;
+        }
+        
+        #result-container {
+            margin-top: 3rem;
+            display: none;
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        .image-comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+            padding: 2.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+        }
+        
+        .comparison-item {
+            text-align: center;
+        }
+        
+        .comparison-item img {
+            width: 100%;
+            max-width: 450px;
+            height: auto;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            object-fit: cover;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .comparison-label {
+            margin-top: 1rem;
+            font-weight: 600;
+            color: var(--neutral-300);
+            font-size: 1rem;
+        }
+        
+        .result-card {
+            background: rgba(126, 188, 89, 0.05);
+            border: 1px solid rgba(126, 188, 89, 0.2);
+            border-radius: 16px;
+            padding: 2.5rem;
+            border-left: 5px solid var(--accent-green);
+            box-shadow: 0 10px 30px rgba(126, 188, 89, 0.1);
+        }
+        
+        .result-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            color: white;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+        
+        .prediction {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            color: var(--accent-green);
+            margin-bottom: 1rem;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+        
+        .confidence {
+            color: var(--neutral-300);
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .confidence-badge {
+            background: rgba(126, 188, 89, 0.2);
+            color: var(--accent-green);
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .top-predictions {
+            margin-top: 2rem;
+        }
+        
+        .top-predictions h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            color: white;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        .prediction-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1rem;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .prediction-name {
+            color: var(--neutral-200);
+            font-weight: 500;
+            font-size: 1rem;
+        }
+        
+        .prediction-confidence {
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .loading {
+            text-align: center;
+            margin-top: 2rem;
+            display: none;
+            padding: 2rem;
+            animation: fadeInUp 0.3s ease-out;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid var(--accent-green);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            color: var(--neutral-400);
+            font-size: 1.1rem;
+        }
+        
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-top: 1.5rem;
+            display: none;
+            border-left: 5px solid #ef4444;
+            animation: fadeInUp 0.3s ease-out;
+        }
+        
+        .enhancement-section {
+            margin-top: 2rem;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .enhancement-section label {
+            display: block;
+            margin-bottom: 1rem;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        #enhancement-select {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            font-size: 1rem;
+            color: var(--neutral-200);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Inter', sans-serif;
+        }
+
+        #enhancement-select option {
+            background: #1a1a2e;
+            color: var(--neutral-200);
+        }
+        
+        #enhancement-select:focus {
+            outline: none;
+            border-color: var(--accent-green);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 0 3px rgba(126, 188, 89, 0.1);
+        }
+
+        #enhancement-select:hover {
+            border-color: rgba(126, 188, 89, 0.5);
+        }
+
+        .enhancement-tip {
+            margin-top: 1rem;
+            padding: 1rem 1.25rem;
+            background: rgba(126, 188, 89, 0.05);
+            border-left: 3px solid var(--accent-green);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            color: var(--neutral-400);
+            line-height: 1.6;
+        }
+
+        .enhancement-tip {
+            font-style: italic;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 6rem;
+            padding: 3rem 2rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+        }
+
+        .footer-text {
+            color: var(--neutral-500);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 968px) {
+            .hero {
+                padding: 8rem 1.5rem 4rem;
+            }
+
+            h1 {
+                font-size: clamp(2rem, 8vw, 3.5rem);
+            }
+
+            .subtitle {
+                font-size: 1.15rem;
+            }
+
+            .container {
+                padding: 2rem;
+            }
+
+            .image-comparison {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .nav-container {
+                padding: 1rem;
+            }
+
+            .logo {
+                font-size: 1.5rem;
+            }
+
+            .hero {
+                padding: 7rem 1rem 3rem;
+            }
+
+            .container {
+                padding: 1.5rem;
+            }
+
+            .btn {
+                padding: 1rem 2rem;
+                font-size: 1rem;
+            }
+
+            .upload-area {
+                padding: 2rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    
+    <nav id="navbar">
+        <div class="nav-container">
+            <div class="logo">AgriVisionAI</div>
+            <div class="nav-status">
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-badge">
+            AI-Powered Plant Disease Detection
+        </div>
+        <h1>Diagnose Plant Diseases</h1>
+        <p class="subtitle">
+            Upload a plant leaf image and let our advanced CNN model identify diseases across 38 different categories. 
+            Fast, accurate, and powered by deep learning.
+        </p>
+    </section>
+
+    <div class="main-container">
+        <div class="container">
+            <div class="section-tag">UPLOAD & ANALYZE</div>
+            <h2 class="section-title">Start Your Analysis</h2>
+            <p class="section-description">
+                Upload a clear image of the plant leaf. Our AI will process it and provide detailed disease detection results.
+            </p>
+        
+            <div class="upload-area" id="upload-area">
+                <div class="upload-icon">Upload Image</div>
+                <div class="upload-text">Click to upload or drag and drop</div>
+                <div class="upload-text secondary">PNG, JPG or JPEG (Max 16MB)</div>
+                <input type="file" id="file-input" accept="image/png, image/jpeg, image/jpg">
+                <div class="file-info" id="file-info"></div>
+            </div>
+            
+            <div class="enhancement-section" id="enhancement-section" style="display: none;">
+                <label for="enhancement-select">
+                    Image Enhancement (Optional)
+                </label>
+                <select id="enhancement-select">
+                    <option value="none">No Enhancement</option>
+                    <option value="shadow_removal">Shadow Removal (HSV+CLAHE - Recommended)</option>
+                    <option value="histogram_equalization">Histogram Equalization (Improve Contrast)</option>
+                    <option value="contrast_stretching">Contrast Stretching (Log Transform)</option>
+                    <option value="median_filter">Median Filter (Remove Salt-and-Pepper Noise)</option>
+                    <option value="gaussian_smoothing">Gaussian Smoothing (Remove High-Frequency Noise)</option>
+                    <option value="homomorphic_filter">Homomorphic Filter (Normalize Illumination)</option>
+                    <option value="all_preprocessing">All Preprocessing Combined (Compare All Methods)</option>
+                </select>
+                <div class="enhancement-tip">
+                    <span id="enhancement-tip">Select an enhancement method to improve image quality before analysis.</span>
+                </div>
+            </div>
+            
+            <div id="preview-container">
+                <img id="image-preview" alt="Preview">
+            </div>
+            
+            <button class="btn" id="predict-btn" disabled>
+                <span style="position: relative; z-index: 1;">Analyze Image</span>
+            </button>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing image with AI...</p>
+            </div>
+            
+            <div class="error" id="error-message"></div>
+            
+            <div id="result-container">
+                <!-- Comparison Mode: Show all 7 preprocessing results -->
+                <div id="comparison-grid" style="display: none;">
+                    <h2 style="color: white; font-family: 'Space Grotesk', sans-serif; margin-bottom: 2rem; text-align: center;">
+                        All Preprocessing Methods Comparison
+                    </h2>
+                    <div id="comparison-results" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;"></div>
+                </div>
+                
+                <!-- Single Mode: Show one result -->
+                <div id="single-result">
+                    <div class="image-comparison" id="image-comparison">
+                        <div class="comparison-item">
+                            <img id="original-display" alt="Original Image">
+                            <div class="comparison-label">Original Input</div>
+                        </div>
+                        <div class="comparison-item">
+                            <img id="enhanced-display" alt="Enhanced Image">
+                            <div class="comparison-label">After Preprocessing</div>
+                        </div>
+                    </div>
+                    
+                    <div class="result-card">
+                    <div id="quality-warning" style="display: none; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border-left: 4px solid #ef4444;">
+                        <strong>Quality Warning:</strong> <span id="quality-message"></span>
+                    </div>
+                    
+                    <div id="preprocessing-advice" style="display: none; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border-left: 4px solid;">
+                        <strong>Preprocessing Recommendation:</strong>
+                        <p id="advice-message" style="margin: 0.5rem 0 0 0;"></p>
+                    </div>
+                    
+                    <div class="result-title">Detection Result</div>
+                    <div class="prediction" id="prediction"></div>
+                    <div class="confidence" id="confidence"></div>
+                    
+                    <div id="confidence-comparison" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                        <p style="margin: 0.5rem 0; color: #c4c9db;"><strong>Baseline (No Preprocessing):</strong> <span id="baseline-conf">0%</span></p>
+                        <p style="margin: 0.5rem 0; color: #c4c9db;"><strong>With Preprocessing:</strong> <span id="processed-conf">0%</span></p>
+                        <p id="confidence-change" style="margin: 0.75rem 0 0 0; font-weight: 600; font-size: 1.1rem;"></p>
+                    </div>
+                    
+                    <div id="inference-info" style="margin-top: 1rem; padding: 0.75rem; background: rgba(126, 188, 89, 0.1); border-left: 3px solid var(--accent-green); border-radius: 6px; font-size: 0.9rem; color: var(--neutral-400);"></div>
+                    
+                    <div class="top-predictions">
+                        <h3>Top 3 Predictions</h3>
+                        <div id="top-predictions-list"></div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <p class="footer-text">© 2025 AgriVisionAI - Powered by TensorFlow & Deep Learning</p>
+        </div>
+    </footer>
+    
+    <script>
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const fileInfo = document.getElementById('file-info');
+        const predictBtn = document.getElementById('predict-btn');
+        const previewContainer = document.getElementById('preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const loading = document.getElementById('loading');
+        const resultContainer = document.getElementById('result-container');
+        const errorMessage = document.getElementById('error-message');
+        const enhancementSection = document.getElementById('enhancement-section');
+        const enhancementSelect = document.getElementById('enhancement-select');
+        const enhancementTip = document.getElementById('enhancement-tip');
+        
+        let selectedFile = null;
+        
+        // Enhancement tips
+        const enhancementTips = {
+            'none': 'Select an enhancement method to improve image quality before analysis.',
+            'shadow_removal': 'RECOMMENDED: Removes shadows using HSV color space and CLAHE. Normalizes lighting without changing disease colors. Based on IVP Labs 8 & 5.',
+            'histogram_equalization': 'Best for images with poor contrast. Enhances brightness without changing colors by working in YCbCr color space.',
+            'contrast_stretching': 'Ideal for dark images. Uses logarithmic transformation to expand dynamic range and reveal details in shadows.',
+            'median_filter': 'Removes salt-and-pepper noise (random dots) while preserving leaf edges. Uses 5×5 spatial filter.',
+            'gaussian_smoothing': 'Reduces high-frequency Gaussian noise. Acts as a low-pass filter to smooth the image.',
+            'homomorphic_filter': 'Best for uneven lighting. Works in frequency domain to normalize illumination and enhance details simultaneously.',
+            'all_preprocessing': 'EXPERIMENTAL: Applies ALL 6 preprocessing methods in sequence (Shadow Removal → Histogram EQ → Contrast Stretch → Median Filter → Gaussian Smooth → Homomorphic Filter). Use this to compare how all methods combined affect the prediction. May over-process the image.'
+        };
+        
+        // Update tip when enhancement changes
+        enhancementSelect.addEventListener('change', (e) => {
+            enhancementTip.textContent = enhancementTips[e.target.value];
+        });
+        
+        // Click to upload
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        // File selection
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+        
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+        
+        function handleFile(file) {
+            if (!file) return;
+            
+            // Validate file type
+            const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+            if (!validTypes.includes(file.type)) {
+                showError('Please upload a valid image file (PNG, JPG, or JPEG)');
+                return;
+            }
+            
+            // Validate file size (16MB)
+            if (file.size > 16 * 1024 * 1024) {
+                showError('File size must be less than 16MB');
+                return;
+            }
+            
+            selectedFile = file;
+            fileInfo.textContent = `Selected: ${file.name}`;
+            predictBtn.disabled = false;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                previewContainer.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            // Show enhancement options
+            enhancementSection.style.display = 'block';
+            
+            // Hide previous results
+            resultContainer.style.display = 'none';
+            errorMessage.style.display = 'none';
+        }
+        
+        // Predict button
+        predictBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            
+            // Show loading
+            loading.style.display = 'block';
+            resultContainer.style.display = 'none';
+            errorMessage.style.display = 'none';
+            predictBtn.disabled = true;
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('enhancement', enhancementSelect.value);
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Add 2 second delay before showing results
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    displayResult(data);
+                } else {
+                    showError(data.error || 'An error occurred during prediction');
+                }
+            } catch (error) {
+                showError('Failed to connect to the server. Please try again.');
+            } finally {
+                loading.style.display = 'none';
+                predictBtn.disabled = false;
+            }
+        });
+        
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.pageYOffset > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        function displayResult(data) {
+            // Check if comparison mode
+            if (data.comparison_mode) {
+                displayComparisonResults(data);
+                return;
+            }
+            
+            // Single result mode
+            document.getElementById('comparison-grid').style.display = 'none';
+            document.getElementById('single-result').style.display = 'block';
+            
+            // Display original and enhanced images
+            document.getElementById('original-display').src = data.original_image;
+            document.getElementById('enhanced-display').src = data.enhanced_image;
+            
+            // Display quality warning if image is blurry
+            const qualityWarning = document.getElementById('quality-warning');
+            const qualityMessage = document.getElementById('quality-message');
+            if (data.quality_check && data.quality_check.is_blurry) {
+                qualityMessage.textContent = `Image appears blurry (Blur Score: ${data.quality_check.blur_score.toFixed(2)}). Prediction accuracy may be reduced. Consider using a clearer image.`;
+                qualityWarning.style.display = 'block';
+            } else {
+                qualityWarning.style.display = 'none';
+            }
+            
+            // Display preprocessing advice
+            if (data.preprocessing_advice) {
+                const adviceBox = document.getElementById('preprocessing-advice');
+                const adviceMessage = document.getElementById('advice-message');
+                adviceMessage.textContent = data.preprocessing_advice.reason;
+                
+                // Color code based on impact
+                if (data.preprocessing_advice.confidence_impact === 'warning') {
+                    adviceBox.style.background = 'rgba(255, 107, 107, 0.1)';
+                    adviceBox.style.borderColor = 'rgba(255, 107, 107, 0.3)';
+                    adviceBox.style.color = '#fca5a5';
+                } else if (data.preprocessing_advice.confidence_impact === 'positive') {
+                    adviceBox.style.background = 'rgba(126, 188, 89, 0.1)';
+                    adviceBox.style.borderColor = 'rgba(126, 188, 89, 0.3)';
+                    adviceBox.style.color = '#7ebc59';
+                } else if (data.preprocessing_advice.confidence_impact === 'recommended') {
+                    adviceBox.style.background = 'rgba(20, 0, 198, 0.1)';
+                    adviceBox.style.borderColor = 'rgba(20, 0, 198, 0.3)';
+                    adviceBox.style.color = '#8b92a8';
+                } else {
+                    adviceBox.style.background = 'rgba(139, 146, 168, 0.1)';
+                    adviceBox.style.borderColor = 'rgba(139, 146, 168, 0.3)';
+                    adviceBox.style.color = '#8b92a8';
+                }
+                
+                adviceBox.style.display = 'block';
+            }
+            
+            // Show confidence comparison if preprocessing was used
+            if (data.enhancement_applied !== 'none' && data.baseline_confidence) {
+                const comparisonDiv = document.getElementById('confidence-comparison');
+                const baselineSpan = document.getElementById('baseline-conf');
+                const processedSpan = document.getElementById('processed-conf');
+                const changeText = document.getElementById('confidence-change');
+                
+                baselineSpan.textContent = data.baseline_confidence.toFixed(2) + '%';
+                processedSpan.textContent = data.confidence.toFixed(2) + '%';
+                
+                const diff = data.confidence - data.baseline_confidence;
+                if (diff > 0) {
+                    changeText.textContent = `↑ Improved by ${diff.toFixed(2)}%`;
+                    changeText.style.color = '#7ebc59';
+                } else if (diff < 0) {
+                    changeText.textContent = `↓ Decreased by ${Math.abs(diff).toFixed(2)}%`;
+                    changeText.style.color = '#ff6b6b';
+                } else {
+                    changeText.textContent = '→ No change';
+                    changeText.style.color = '#8b92a8';
+                }
+                
+                comparisonDiv.style.display = 'block';
+            }
+            
+            document.getElementById('prediction').textContent = data.prediction.replace(/_/g, ' ');
+            
+            // Build confidence display with badges
+            const confidenceEl = document.getElementById('confidence');
+            confidenceEl.innerHTML = `
+                <span class="confidence-badge">${data.confidence.toFixed(2)}% Confidence</span>
+            `;
+            
+            if (data.enhancement_applied && data.enhancement_applied !== 'none') {
+                const enhancementNames = {
+                    'shadow_removal': 'Shadow Removal (HSV+CLAHE)',
+                    'histogram_equalization': 'Histogram Equalization',
+                    'contrast_stretching': 'Contrast Stretching',
+                    'median_filter': 'Median Filter',
+                    'gaussian_smoothing': 'Gaussian Smoothing',
+                    'homomorphic_filter': 'Homomorphic Filter',
+                    'all_preprocessing': 'All 6 Preprocessing Methods Combined'
+                };
+                confidenceEl.innerHTML += `
+                    <span style="color: var(--neutral-500);">-</span>
+                    <span>Enhanced with ${enhancementNames[data.enhancement_applied]}</span>
+                `;
+            } else {
+                confidenceEl.innerHTML += `
+                    <span style="color: var(--neutral-500);">-</span>
+                    <span>No Enhancement Applied</span>
+                `;
+            }
+            
+            // Display inference method (TTA)
+            const inferenceInfo = document.getElementById('inference-info');
+            if (data.inference_method) {
+                inferenceInfo.innerHTML = `<strong>Inference Method:</strong> ${data.inference_method}`;
+            }
+            
+            // Display top 3 predictions
+            const topPredictionsList = document.getElementById('top-predictions-list');
+            topPredictionsList.innerHTML = '';
+            
+            data.top_3.forEach((pred, index) => {
+                const item = document.createElement('div');
+                item.className = 'prediction-item';
+                item.innerHTML = `
+                    <span class="prediction-name">${index + 1}. ${pred.class.replace(/_/g, ' ')}</span>
+                    <span class="prediction-confidence">${pred.confidence.toFixed(2)}%</span>
+                `;
+                topPredictionsList.appendChild(item);
+            });
+            
+            resultContainer.style.display = 'block';
+            
+            // Scroll to results
+            resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        function displayComparisonResults(data) {
+            // Hide single result, show comparison grid
+            document.getElementById('single-result').style.display = 'none';
+            document.getElementById('comparison-grid').style.display = 'block';
+            
+            const comparisonResults = document.getElementById('comparison-results');
+            comparisonResults.innerHTML = '';
+            
+            // Extract expected answer from filename
+            let expectedAnswer = null;
+            if (selectedFile && selectedFile.name) {
+                // Parse filename like "TomatoYellowCurlVirus6__heavy_noise.jpg"
+                // Only parse if filename contains "__" delimiter
+                if (selectedFile.name.includes('__')) {
+                    const nameParts = selectedFile.name.split('__')[0]; // Get part before "__"
+                    // Remove numbers and convert to readable format
+                    expectedAnswer = nameParts.replace(/\d+/g, '').replace(/([A-Z])/g, ' $1').trim();
+                }
+            }
+            
+            // Show expected answer and warnings in title section
+            let headerHtml = '<h2 style="color: white; font-family: \'Space Grotesk\', sans-serif; margin-bottom: 2rem; text-align: center;">All Preprocessing Methods Comparison</h2>';
+            
+            if (expectedAnswer) {
+                headerHtml += `
+                    <div style="text-align: center; margin-bottom: 1.5rem; padding: 1rem; background: rgba(126, 188, 89, 0.1); border-left: 4px solid #7ebc59; border-radius: 8px;">
+                        <span style="color: #7ebc59; font-weight: 600;">Expected Answer: </span>
+                        <span style="color: white; font-weight: 600; font-size: 1.1rem;">${expectedAnswer}</span>
+                    </div>
+                `;
+            }
+            
+            if (data.disagreement_warning) {
+                const warningColor = data.disagreement_warning.severity === 'high' ? '#ff6b6b' : '#ffb366';
+                const warningTitle = data.disagreement_warning.severity === 'high' ? 'Prediction Inconsistency Detected' : 'Mixed Results';
+                
+                headerHtml += `
+                    <div style="text-align: center; margin-bottom: 1.5rem; padding: 1rem; background: rgba(255, 150, 50, 0.1); border-left: 4px solid ${warningColor}; border-radius: 8px;">
+                        <span style="color: ${warningColor}; font-weight: 600;">${warningTitle}: </span>
+                        <span style="color: #c4c9db;">${data.disagreement_warning.message}</span>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('comparison-grid').querySelector('h2').outerHTML = headerHtml;
+            
+            // Find best and worst results
+            const confidences = data.all_results.map(r => r.confidence);
+            const maxConf = Math.max(...confidences);
+            const minConf = Math.min(...confidences);
+            
+            // Get baseline (no enhancement) prediction for comparison
+            const baselinePrediction = data.all_results[0].prediction;
+            
+            data.all_results.forEach((result, index) => {
+                const card = document.createElement('div');
+                const isBest = result.confidence === maxConf;
+                const isWorst = result.confidence === minConf;
+                
+                // Check if prediction matches expected answer (normalize both strings)
+                const normalizeString = (str) => str.toLowerCase().replace(/[^a-z]/g, '');
+                
+                const normalizedPrediction = normalizeString(result.prediction);
+                const normalizedExpected = normalizeString(expectedAnswer);
+                
+                // Calculate similarity: count matching words
+                const predWords = result.prediction.toLowerCase().split(/\s+/);
+                const expWords = expectedAnswer ? expectedAnswer.toLowerCase().split(/\s+/) : [];
+                
+                // Count how many expected words appear in prediction
+                const matchingWords = expWords.filter(word => 
+                    predWords.some(pWord => pWord.includes(word) || word.includes(pWord))
+                ).length;
+                
+                // Consider correct if at least 70% of expected words match
+                const matchThreshold = Math.ceil(expWords.length * 0.7);
+                const isCorrectPrediction = expectedAnswer && matchingWords >= matchThreshold;
+                
+                // Only flag as wrong if it doesn't match expected answer
+                const isWrongPrediction = expectedAnswer && !isCorrectPrediction;
+                
+                let borderColor = 'rgba(255, 255, 255, 0.1)';
+                let badgeHtml = '';
+                
+                if (isBest) {
+                    borderColor = 'rgba(126, 188, 89, 0.5)';
+                    badgeHtml = '<div style="position: absolute; top: 10px; right: 10px; background: rgba(126, 188, 89, 0.2); color: #7ebc59; padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">Best</div>';
+                } else if (isWorst) {
+                    borderColor = 'rgba(255, 107, 107, 0.5)';
+                    badgeHtml = '<div style="position: absolute; top: 10px; right: 10px; background: rgba(255, 107, 107, 0.2); color: #ff6b6b; padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">Worst</div>';
+                } else if (isWrongPrediction && !isBest && !isWorst) {
+                    // Wrong prediction (doesn't match expected)
+                    borderColor = 'rgba(255, 150, 50, 0.5)';
+                    badgeHtml = '<div style="position: absolute; top: 10px; right: 10px; background: rgba(255, 150, 50, 0.2); color: #ffb366; padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">Wrong</div>';
+                }
+                
+                card.style.cssText = `
+                    position: relative;
+                    background: linear-gradient(135deg, rgba(26, 26, 46, 0.9), rgba(10, 10, 10, 0.9));
+                    border: 2px solid ${borderColor};
+                    border-radius: 12px;
+                    padding: 1.5rem;
+                    transition: transform 0.3s ease;
+                `;
+                
+                const diff = result.confidence - data.baseline_confidence;
+                const diffText = diff > 0 ? `↑ +${diff.toFixed(2)}%` : diff < 0 ? `↓ ${diff.toFixed(2)}%` : '';
+                const diffColor = diff > 0 ? '#7ebc59' : diff < 0 ? '#ff6b6b' : '#8b92a8';
+                
+                // Add warning message for wrong predictions
+                let wrongPredictionWarning = '';
+                if (isWrongPrediction && !isBest && !isWorst) {
+                    wrongPredictionWarning = `
+                        <div style="background: rgba(255, 150, 50, 0.1); border: 1px solid rgba(255, 150, 50, 0.3); border-radius: 6px; padding: 0.5rem; margin-top: 0.75rem; font-size: 0.85rem; color: #ffb366;">
+                            This method produced a wrong prediction. Over-processing may have destroyed disease features.
+                        </div>
+                    `;
+                }
+                
+                card.innerHTML = `
+                    ${badgeHtml}
+                    <h3 style="color: #1400c6; font-family: 'Space Grotesk', sans-serif; margin-bottom: 1rem; font-size: 1.1rem;">
+                        ${result.method}
+                    </h3>
+                    <img src="${result.image}" alt="${result.method}" style="width: 100%; border-radius: 8px; margin-bottom: 1rem; border: 1px solid rgba(255, 255, 255, 0.1);">
+                    <div style="margin-bottom: 0.75rem;">
+                        <div style="color: white; font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">
+                            ${result.prediction.replace(/_/g, ' ')}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            <span style="background: rgba(126, 188, 89, 0.2); color: #7ebc59; padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600;">
+                                ${result.confidence.toFixed(2)}%
+                            </span>
+                            <span style="color: ${diffColor}; font-size: 0.9rem; font-weight: 600;">
+                                ${diffText}
+                            </span>
+                        </div>
+                    </div>
+                    ${wrongPredictionWarning}
+                `;
+                
+                comparisonResults.appendChild(card);
+            });
+            
+            resultContainer.style.display = 'block';
+            resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            resultContainer.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
