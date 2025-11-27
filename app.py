@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, render_template
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import load_model, Model
 from tensorflow.keras.preprocessing import image
 import numpy as np
 import os
@@ -9,6 +9,8 @@ from PIL import Image
 import cv2
 from scipy import ndimage
 import base64
+import tensorflow as tf
+import matplotlib.cm as cm
 
 app = Flask(__name__)
 
@@ -74,6 +76,99 @@ def pil_to_base64(img):
     img.save(buffered, format="PNG")
     img_str = base64.b64encode(buffered.getvalue()).decode()
     return f"data:image/png;base64,{img_str}"
+
+# -------------------------------------------------------------------------
+#  GRAD-CAM VISUALIZATION
+# -------------------------------------------------------------------------
+def make_gradcam_heatmap(img_array, model, pred_index=None):
+    """
+    Generate Grad-CAM heatmap showing which parts of the image the model focuses on.
+    
+    Args:
+        img_array: Preprocessed image array (1, 150, 150, 3), values 0-1
+        model: The trained Keras model
+        pred_index: Class index to visualize (None = use predicted class)
+        
+    Returns:
+        numpy array: Heatmap normalized to 0-1
+    """
+    # Our model is Sequential: [MobileNetV2, GlobalAvgPool, Dense, BatchNorm, Dropout, Dense]
+    # We need to get the output of the MobileNetV2 base (the convolutional features)
+    nested_base_model = model.layers[0]  # MobileNetV2
+    
+    # Create a model that outputs:
+    # 1. The last conv layer output from MobileNetV2
+    # 2. The final prediction
+    inputs = tf.keras.Input(shape=(150, 150, 3))
+    x = nested_base_model(inputs)  # Output of MobileNetV2
+    
+    # Pass through the rest of the model layers
+    y = x
+    for layer in model.layers[1:]:
+        y = layer(y)
+    
+    grad_model = tf.keras.models.Model(inputs=inputs, outputs=[x, y])
+    
+    with tf.GradientTape() as tape:
+        last_conv_layer_output, preds = grad_model(img_array)
+        if pred_index is None:
+            pred_index = tf.argmax(preds[0])
+        class_channel = preds[:, pred_index]
+    
+    # Gradient of the output neuron with regard to the feature map
+    grads = tape.gradient(class_channel, last_conv_layer_output)
+    
+    # Mean intensity of the gradient over each feature map channel
+    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+    
+    # Multiply each channel by "how important this channel is"
+    last_conv_layer_output = last_conv_layer_output[0]
+    heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
+    heatmap = tf.squeeze(heatmap)
+    
+    # Normalize between 0 and 1
+    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
+    return heatmap.numpy()
+
+def generate_gradcam_image(original_img, heatmap, alpha=0.4):
+    """
+    Superimpose Grad-CAM heatmap on original image using cv2.addWeighted.
+    Uses high-contrast JET colormap to pinpoint disease lesions.
+    
+    Args:
+        original_img: PIL Image (original size)
+        heatmap: numpy array from make_gradcam_heatmap (values 0-1)
+        alpha: Transparency of heatmap overlay (0.4 = 40% heatmap, 60% image)
+        
+    Returns:
+        PIL Image: Original image with heatmap overlay showing disease hot spots
+    """
+    # Resize original to display size
+    img = original_img.copy().resize((150, 150))
+    img_array = np.array(img)
+    
+    # Convert RGB to BGR for OpenCV
+    img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+    
+    # Resize heatmap to match image dimensions exactly
+    heatmap_resized = cv2.resize(heatmap, (150, 150))
+    
+    # Rescale heatmap to 0-255 for colormap application
+    heatmap_uint8 = np.uint8(255 * heatmap_resized)
+    
+    # Apply high-contrast JET colormap (OpenCV's COLORMAP_JET)
+    # This maps low values to blue and high values to red
+    jet_heatmap = cv2.applyColorMap(heatmap_uint8, cv2.COLORMAP_JET)
+    
+    # Superimpose using weighted blend: cv2.addWeighted
+    # Result = alpha * heatmap + (1-alpha) * image
+    # This makes red "hot spots" sit directly on top of disease areas
+    superimposed = cv2.addWeighted(jet_heatmap, alpha, img_bgr, 1 - alpha, 0)
+    
+    # Convert back to RGB for PIL
+    superimposed_rgb = cv2.cvtColor(superimposed, cv2.COLOR_BGR2RGB)
+    
+    return Image.fromarray(superimposed_rgb)
 
 # -------------------------------------------------------------------------
 #  [IVP LAB 4 IMPLEMENTATION] - Quality Assessment (Blur Detection)
@@ -398,14 +493,24 @@ def predict():
                     pred_class_idx = np.argmax(predictions)
                     pred_confidence = float(predictions[pred_class_idx] * 100)
                     
-                    # Store result
+                    # Generate Grad-CAM for this method
+                    try:
+                        heatmap = make_gradcam_heatmap(np.expand_dims(img_array, axis=0), model)
+                        gradcam_img = generate_gradcam_image(processed_img, heatmap)
+                        gradcam_base64 = pil_to_base64(gradcam_img)
+                    except Exception as e:
+                        print(f"Grad-CAM generation failed for {method_name}: {e}")
+                        gradcam_base64 = None
+                    
+                    # Store result with Grad-CAM
                     all_results.append({
                         'method': method_name,
                         'method_id': method_id,
                         'prediction': CLASS_NAMES[pred_class_idx],
                         'prediction_idx': int(pred_class_idx),
                         'confidence': pred_confidence,
-                        'image': pil_to_base64(model_input)
+                        'image': pil_to_base64(model_input),
+                        'gradcam_image': gradcam_base64
                     })
                 
                 # Detect prediction inconsistencies
@@ -439,6 +544,71 @@ def predict():
                     'baseline_confidence': baseline_confidence,
                     'original_image': original_base64
                 }
+            
+            elif enhancement == 'sequential_all':
+                # Apply ALL filters sequentially to ONE image
+                processed_img = original_img.copy()
+                
+                # Sequence: Shadow -> HistEq -> Contrast -> Median -> Gaussian -> Homomorphic
+                # We skip 'none'
+                methods_sequence = [
+                    'shadow_removal',
+                    'histogram_equalization',
+                    'contrast_stretching',
+                    'median_filter',
+                    'gaussian_smoothing',
+                    'homomorphic_filter'
+                ]
+                
+                for method in methods_sequence:
+                    processed_img = apply_enhancement(processed_img, method)
+                
+                # Prepare display version
+                enhanced_img_display = processed_img.copy().resize((150, 150))
+                enhanced_base64 = pil_to_base64(enhanced_img_display)
+                
+                # Predict
+                model_input_img = processed_img.resize((150, 150))
+                img_array = image.img_to_array(model_input_img) / 255.0
+                
+                predictions_avg = predict_with_tta(model, img_array)
+                predicted_class_idx = np.argmax(predictions_avg)
+                confidence = float(predictions_avg[predicted_class_idx] * 100)
+                
+                top_3_idx = np.argsort(predictions_avg)[-3:][::-1]
+                top_3_predictions = [
+                    {
+                        'class': CLASS_NAMES[idx],
+                        'confidence': float(predictions_avg[idx] * 100)
+                    }
+                    for idx in top_3_idx
+                ]
+                
+                # --- Generate Grad-CAM for sequential mode ---
+                try:
+                    heatmap = make_gradcam_heatmap(np.expand_dims(img_array, axis=0), model)
+                    gradcam_img = generate_gradcam_image(processed_img, heatmap)
+                    gradcam_base64 = pil_to_base64(gradcam_img)
+                except Exception as e:
+                    print(f"Grad-CAM generation failed: {e}")
+                    gradcam_base64 = None
+                
+                result = {
+                    'success': True,
+                    'comparison_mode': False,
+                    'prediction': CLASS_NAMES[predicted_class_idx],
+                    'confidence': confidence,
+                    'baseline_confidence': baseline_confidence,
+                    'top_3': top_3_predictions,
+                    'enhancement_applied': 'sequential_all',
+                    'quality_check': quality_metrics,
+                    'inference_method': 'Test-Time Augmentation (4-view Ensemble)',
+                    'preprocessing_advice': preprocessing_advice,
+                    'original_image': original_base64,
+                    'enhanced_image': enhanced_base64,
+                    'gradcam_image': gradcam_base64
+                }
+
             else:
                 # --- STEP 2: SINGLE ENHANCEMENT (Lab 8/5) ---
                 enhanced_img = original_img.copy()
@@ -473,6 +643,16 @@ def predict():
                     for idx in top_3_idx
                 ]
                 
+                # --- STEP 5: GENERATE GRAD-CAM VISUALIZATION ---
+                try:
+                    # Generate heatmap using the processed image
+                    heatmap = make_gradcam_heatmap(np.expand_dims(img_array, axis=0), model)
+                    gradcam_img = generate_gradcam_image(enhanced_img, heatmap)
+                    gradcam_base64 = pil_to_base64(gradcam_img)
+                except Exception as e:
+                    print(f"Grad-CAM generation failed: {e}")
+                    gradcam_base64 = None
+                
                 result = {
                     'success': True,
                     'comparison_mode': False,
@@ -485,7 +665,8 @@ def predict():
                     'inference_method': 'Test-Time Augmentation (4-view Ensemble)',
                     'preprocessing_advice': preprocessing_advice,
                     'original_image': original_base64,
-                    'enhanced_image': enhanced_base64
+                    'enhanced_image': enhanced_base64,
+                    'gradcam_image': gradcam_base64
                 }
             
             return jsonify(result)
