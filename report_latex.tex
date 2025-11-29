@@ -39,7 +39,7 @@ Lab Instructor: Dr. Anurag Choubey}
 
 \maketitle
 \begin{center}
-\includegraphics[width=0.4\textwidth]{university_logo.png}
+\includegraphics[width=0.4\textwidth]{images/university_logo.png}
 \end{center}
 \thispagestyle{empty}
 \newpage
@@ -50,7 +50,7 @@ AgriVision presents a comprehensive web-based platform that bridges classical im
 
 \section*{Project Description}
 
-AgriVision is a Flask-based web application implementing a dual-pipeline architecture to evaluate and compare various spatial and frequency domain image enhancement algorithms on a Convolutional Neural Network (CNN) model trained for multi-class plant disease classification. The complete source code is available on \href{https://github.com/RD945/plant-disease-detection}{GitHub}.
+AgriVision is a Flask-based web application implementing a dual-pipeline architecture to evaluate and compare various spatial and frequency domain image enhancement algorithms on a Convolutional Neural Network (CNN) model trained for multi-class plant disease classification. The complete source code is available on \href{https://github.com/RD945/plant-disease-detection}{GitHub}, and the LaTeX source for this report is available on \href{https://www.overleaf.com/read/pdstjwfdxvzt#50b11b}{Overleaf}.
 
 \paragraph{System Architecture}
 \begin{itemize}
@@ -86,7 +86,7 @@ The dataset encompasses healthy and diseased leaf samples across 14 crop species
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.95\textwidth]{Sample-images-from-PlantVillage-dataset-for-38-types-of-leaf-diseases.png}
+\includegraphics[width=0.95\textwidth]{images/Sample-images-from-PlantVillage-dataset-for-38-types-of-leaf-diseases.png}
 \caption{Sample images from PlantVillage dataset for 38 types of leaf diseases across multiple crop species}
 \end{figure}
 
@@ -96,7 +96,7 @@ The system implements a dual-pipeline processing architecture separating trainin
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.95\textwidth]{pipeline.png}
+\includegraphics[width=0.95\textwidth]{images/pipeline.png}
 \caption{AgriVision dual-pipeline workflow: Training pipeline (top) and Inference pipeline (bottom) showing data flow from input to prediction}
 \end{figure}
 
@@ -159,7 +159,7 @@ While preprocessing is essential for degraded images, it is not a universal solu
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{overpreprocess.png}
+    \includegraphics[width=0.8\textwidth]{images/overpreprocess.png}
     \caption{Impact of Over-Processing: Applying aggressive enhancement to an already clean image introduces artifacts and loss of detail, potentially leading to incorrect classification.}
 \end{figure}
 
@@ -173,7 +173,7 @@ Rather than training from scratch, the system leverages MobileNetV2\citeref{2}, 
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{mobilenetv2_architecture.png}
+\includegraphics[width=0.85\textwidth]{images/mobilenetv2_architecture.png}
 \caption{MobileNetV2 network structure showing inverted residual blocks with linear bottlenecks}
 \end{figure}
 
@@ -211,7 +211,7 @@ Rather than training from scratch, the system leverages MobileNetV2\citeref{2}, 
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{accuracy_and_loss_over_epochs.png}
+    \includegraphics[width=\textwidth]{images/accuracy_and_loss_over_epochs.png}
     \caption{Training History: Accuracy and Loss curves over epochs showing the convergence of the model during the two-stage training process.}
 \end{figure}
 
@@ -302,7 +302,7 @@ where $\text{CDF}(k) = \sum_{i=0}^{k} \frac{h(i)}{N_{\text{pixels}}}$ and $h(i)$
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.7\textwidth]{histogram_equalization.png}
+\includegraphics[width=0.7\textwidth]{images/histogram_equalization.png}
 \caption{Effect of histogram equalization on low-contrast image showing enhanced dynamic range}
 \end{figure}
 
@@ -472,7 +472,7 @@ where $D(u,v) = \sqrt{(u - u_0)^2 + (v - v_0)^2}$, $D_0 = 30$ (cutoff), $n = 2$ 
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.7\textwidth]{homomorphic_filtering.png}
+\includegraphics[width=0.7\textwidth]{images/homomorphic_filtering.png}
 \caption{Homomorphic filtering for illumination correction: (a) Original image with non-uniform lighting (b) Enhanced image with normalized illumination and improved contrast}
 \end{figure}
 
@@ -644,13 +644,13 @@ AgriVision implements a comprehensive comparison system that applies all seven e
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{compare_all_output.png}
+    \includegraphics[width=\textwidth]{images/compare_all_output.png}
     \caption{Comparison Mode Output: The system processes the input image using all available enhancement algorithms simultaneously. Badge Logic -- Best (Green): Highest confidence; Worst (Red): Lowest confidence; Wrong (Orange): Mismatch with expected answer.}
 \end{figure}
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{compare_all_graph.png}
+    \includegraphics[width=0.8\textwidth]{images/compare_all_graph.png}
     \caption{Comparison Result Graph: Visualizing the confidence scores across different enhancement methods to identify the most effective preprocessing technique for the specific input.}
 \end{figure}
 
@@ -677,12 +677,12 @@ Clean Image & 95-99\% & \textit{None} & 40-70\% (if preprocessed) \\ \bottomrule
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[b]{0.48\textwidth}
-        \includegraphics[width=\textwidth]{roc_without_pre.png}
+        \includegraphics[width=\textwidth]{images/roc_without_pre.png}
         \caption{ROC Curve (Without Preprocessing)}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.48\textwidth}
-        \includegraphics[width=\textwidth]{roc_with_pre.png}
+        \includegraphics[width=\textwidth]{images/roc_with_pre.png}
         \caption{ROC Curve (With Preprocessing)}
     \end{subfigure}
     \caption{Receiver Operating Characteristic (ROC) curves comparing model performance before and after preprocessing. Note the improved Area Under Curve (AUC) with preprocessing.}
@@ -690,7 +690,7 @@ Clean Image & 95-99\% & \textit{None} & 40-70\% (if preprocessed) \\ \bottomrule
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{confusuion_matrix.png}
+    \includegraphics[width=0.8\textwidth]{images/confusuion_matrix.png}
     \caption{Confusion Matrix showing classification performance across 38 disease classes. The strong diagonal indicates high classification accuracy.}
 \end{figure}
 
@@ -709,12 +709,12 @@ To validate that the model focuses on relevant disease features rather than back
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[b]{0.48\textwidth}
-        \includegraphics[width=\textwidth]{gradcam1.png}
+        \includegraphics[width=\textwidth]{images/gradcam1.png}
         \caption{Grad-CAM Visualization 1}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.48\textwidth}
-        \includegraphics[width=\textwidth]{gradcam2.png}
+        \includegraphics[width=\textwidth]{images/gradcam2.png}
         \caption{Grad-CAM Visualization 2}
     \end{subfigure}
     \caption{Grad-CAM heatmaps overlaid on leaf images. The red/yellow regions indicate areas of high importance for the model's prediction, confirming focus on lesion patterns.}
@@ -722,7 +722,7 @@ To validate that the model focuses on relevant disease features rather than back
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.6\textwidth]{gradcam3.png}
+    \includegraphics[width=0.6\textwidth]{images/gradcam3.png}
     \caption{Grad-CAM visualization during deployment: Real-time heatmap generation in the web application showing model attention on disease-affected regions.}
 \end{figure}
 
@@ -744,12 +744,12 @@ To validate that the model focuses on relevant disease features rather than back
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[b]{0.48\textwidth}
-        \includegraphics[width=\textwidth]{sequential_input.png}
+        \includegraphics[width=\textwidth]{images/sequential_input.png}
         \caption{Input Image}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.48\textwidth}
-        \includegraphics[width=\textwidth]{sequential_result.png}
+        \includegraphics[width=\textwidth]{images/sequential_result.png}
         \caption{Processed Result}
     \end{subfigure}
     \caption{Interface demonstration showing the transformation from input to result using sequential filter application. The sequential preprocessing pipeline achieved 80.2\% accuracy during testing on degraded images.}
