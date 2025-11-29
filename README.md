@@ -5,7 +5,6 @@ Project Report - https://www.overleaf.com/read/pdstjwfdxvzt#50b11b
 Dataset link - https://www.kaggle.com/datasets/vipoooool/new-plant-diseases-dataset
 
 A Flask web application for detecting plant diseases using a CNN model trained on 38 different plant disease classes with 97% accuracy.
-
 This project distinguishes itself by including an advanced **Image Enhancement Engine** and a **Testing/Validation Suite** to demonstrate how preprocessing algorithms can recover accuracy on degraded real-world images (shadows, noise, poor lighting).
 
 ## Features
@@ -245,6 +244,7 @@ gunicorn -w 4 -b 0.0.0.0:5000 app:app
 ## License
 
 This project is provided as-is for educational and research purposes.
+
 
 
 
